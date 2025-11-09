@@ -7,8 +7,6 @@ A smooth app to explore intraday stock data at 1‑second resolution. Pick a sto
 - Intraday return vs. the day’s first close.
 - Rolling 30‑minute annualized volatility computed from minute returns.
 
-It’s fast: the app loads only what it needs (optionally per‑day), draws charts once, and updates a cursor as you move the slider.
-
 ## Project layout
 
 ```
