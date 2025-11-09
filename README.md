@@ -14,3 +14,10 @@
 ├── README.md
 └── requirements.txt
 ```
+---
+
+## To uncompress the data files:
+
+```
+gunzip data_json/*.json.gz
+```
