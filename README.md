@@ -2,6 +2,7 @@
 
 ## The tree structure of the project
 
+```
 ├── data_cleaning.ipynb
 ├── data_json
 │   ├── ABNB.json.gz
@@ -12,3 +13,4 @@
 │   └── more
 ├── README.md
 └── requirements.txt
+```
