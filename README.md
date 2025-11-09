@@ -1,6 +1,6 @@
 # Historical Data Slider
 
-A lightweight, static web app to explore intraday stock data at 1‑second resolution. Pick a stock, pick a date, and scrub a time slider to see:
+A smooth app to explore intraday stock data at 1‑second resolution. Pick a stock and date and scrub a time slider to see:
 
 - Price and volume charts (with y‑axis titles “Price” and “Volume”).
 - Current OHLC at the selected second (with a precision toggle).
