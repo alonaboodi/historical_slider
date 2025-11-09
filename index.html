@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historical Panel Slider</title>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/boost.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #ffffff;
+      color: #000000;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .controls {
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+    }
+
+    select {
+      padding: 8px 12px;
+      border: 1px solid #d0d0d0;
+      background: #ffffff;
+      font-family: inherit;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      min-width: 200px;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #000000;
+    }
+
+    .slider-container {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      background: #e5e5e5;
+      border-radius: 2px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #000000;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: #000000;
+      cursor: pointer;
+      border-radius: 50%;
+      border: none;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 30px;
+    }
+
+    .left-panel {
+      background: #fafafa;
+      padding: 20px;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+    }
+
+    .time-display {
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 25px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 1px;
+    }
+
+    .data-section {
+      margin-bottom: 25px;
+    }
+
+    .data-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .data-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #999;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-row:last-child {
+      border-bottom: none;
+    }
+
+    .data-label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .data-value {
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      color: #000;
+    }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .chart-container {
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      padding: 15px;
+    }
+
+    #price-chart {
+      height: 400px;
+    }
+
+    #volume-chart {
+      height: 200px;
+    }
+
+    @media (max-width: 968px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+
+      .left-panel {
+        order: 2;
+      }
+
+      .right-panel {
+        order: 1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 15px;
+      }
+
+      .control-row {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      select {
+        min-width: 100%;
+      }
+
+      .time-display {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.95);z-index:9999;font-family:inherit;">
+    <div style="text-align:center;color:#111">
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px">Loading historical slider…</div>
+      <div style="font-size:13px;color:#444">If this takes more than a few seconds, open the browser console to check for errors.</div>
+    </div>
+  </div>
+  <div class="container">
+    <div id="app-message" role="status" aria-live="polite" style="display:none;margin-bottom:12px;padding:10px;border-radius:6px;background:#fff6f5;border:1px solid #ffd2cf;color:#9b2b2b;font-weight:600"></div>
+    <div class="controls">
+      <div class="control-row">
+        <div class="control-group" id="local-load-group" style="display:none;">
+          <label>Local Files</label>
+          <div>
+            <button id="load-local" style="padding:8px 12px;border:1px solid #d0d0d0;background:#fff;border-radius:4px;cursor:pointer;">Load data_json from disk</button>
+            <input id="folder-input" type="file" webkitdirectory directory multiple accept=".json" style="display:none" />
+            <span id="local-hint" style="margin-left:10px;color:#666;font-size:12px;">Required when opening via file://</span>
+          </div>
+        </div>
+        <div class="control-group">
+          <label for="stock-select">Stock</label>
+          <select id="stock-select">
+            <option value="">Select a stock...</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="date-select">Date</label>
+          <select id="date-select">
+            <option value="">Select a date...</option>
+          </select>
+        </div>
+
+        <div class="slider-container">
+          <div class="control-group">
+            <label for="time-slider">Time</label>
+            <input type="range" id="time-slider" min="0" max="100" value="0">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="precision-toggle">Price Decimals</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="precision-toggle">
+            <span style="font-size:13px;color:#333;">High precision (4 dp)</span>
+          </div>
+        </div>
+
+        
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="left-panel">
+        <div class="time-display" id="current-time">09:30:00</div>
+
+        <div class="data-section">
+          <div class="data-section-title">OHLC</div>
+          <div class="data-row">
+            <span class="data-label">Open</span>
+            <span class="data-value" id="open-value">—</span>
+          </div>
+          <div class="data-row">
+            <span class="data-label">High</span>
+            <span class="data-value" id="high-value">—</span>
+          </div>
+          <div class="data-row">
+            <span class="data-label">Low</span>
+            <span class="data-value" id="low-value">—</span>
+          </div>
+          <div class="data-row">
+            <span class="data-label">Close</span>
+            <span class="data-value" id="close-value">—</span>
+          </div>
+        </div>
+
+        <div class="data-section">
+          <div class="data-section-title">Performance</div>
+          <div class="data-row">
+            <span class="data-label">Return</span>
+            <span class="data-value" id="return-value">—</span>
+          </div>
+          <div class="data-row">
+            <span class="data-label">Volatility (Rolling 30 min)</span>
+            <span class="data-value" id="volatility-value">—</span>
+          </div>
+        </div>
+
+        <div class="data-section">
+          <div class="data-section-title">Activity</div>
+          <div class="data-row">
+            <span class="data-label">Volume</span>
+            <span class="data-value" id="volume-value">—</span>
+          </div>
+          <div class="data-row">
+            <span class="data-label">Count</span>
+            <span class="data-value" id="count-value">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="chart-container">
+          <div id="price-chart"></div>
+        </div>
+        <div class="chart-container">
+          <div id="volume-chart"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>
